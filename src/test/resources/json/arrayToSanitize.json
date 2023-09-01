@@ -1,0 +1,6 @@
+{
+  "data" : [
+    {"name":  "field1", "types": ["null", {"name": "String", "default": "<empty>"}, 10]},
+    {"name":  "field2", "types": {"name": "Int", "default": 0}}
+  ]
+}

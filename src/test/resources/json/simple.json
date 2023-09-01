@@ -1,0 +1,9 @@
+{
+  "name": "Peter",
+  "age": 32,
+  "address1": null,
+  "address2": {
+    "city": "Nantes",
+    "zipcode": null
+  }
+}

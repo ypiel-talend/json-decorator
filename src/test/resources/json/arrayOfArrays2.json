@@ -1,0 +1,32 @@
+{
+  "first_array": [
+    1,
+    2,
+    "three",
+    4
+  ],
+  "second_array": [
+    [
+      4,
+      5,
+      "six"
+    ],
+    [
+      7,
+      "height",
+      9
+    ]
+  ],
+  "third_array": [
+    [
+      4,
+      5,
+      "six"
+    ],
+    [
+      7,
+      "height",
+      9
+    ]
+  ]
+}

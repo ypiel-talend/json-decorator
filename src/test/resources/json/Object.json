@@ -1,0 +1,18 @@
+{
+  "a_bool": true,
+  "a_int": 10,
+  "a_float": 3.14,
+  "a_string": "Hello",
+  "an_array": [
+    1, 2, 3, 4
+  ],
+  "an_object": {
+    "nested_bool": false,
+    "nested_int": 20,
+    "nested_float": 7.14,
+    "nested_string": "Bye",
+    "nested_array": [
+      5, 6, 7, 8
+    ]
+  }
+}
