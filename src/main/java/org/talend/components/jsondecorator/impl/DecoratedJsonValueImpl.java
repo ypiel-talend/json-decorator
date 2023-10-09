@@ -9,8 +9,6 @@ import javax.json.JsonValue;
 
 public class DecoratedJsonValueImpl implements DecoratedJsonValue {
 
-    public final static char PATH_SEP = '/';
-
     private final JsonValue delegate;
     private final JsonDecoratorBuilder.JsonDecorator decorator;
 
@@ -18,24 +16,23 @@ public class DecoratedJsonValueImpl implements DecoratedJsonValue {
 
     private JsonValue parent;
 
-    /*DecoratedJsonValueImpl(JsonValue delegate, JsonDecoratorBuilder.JsonDecorator decorator) {
-        this(delegate, decorator, null);
-    }*/
+    private final char separator;
 
-    DecoratedJsonValueImpl(JsonValue delegate, JsonDecoratorBuilder.JsonDecorator decorator, String path, JsonValue parent) {
+    DecoratedJsonValueImpl(JsonValue delegate, JsonDecoratorBuilder.JsonDecorator decorator, String path, JsonValue parent, char separator) {
         this.delegate = delegate;
         this.decorator = decorator;
         this.path = path;
         this.parent = parent;
+        this.separator = separator;
     }
 
     protected String buildPath(String child) {
         if (this.path == null) {
-            this.path = "" + PATH_SEP;
+            this.path = "" + this.separator;
         }
 
-        if (this.path.charAt(this.path.length() - 1) != PATH_SEP) {
-            this.path += "/";
+        if (this.path.charAt(this.path.length() - 1) != separator) {
+            this.path += this.getSeparator();
         }
 
         return this.path + child;
@@ -46,18 +43,23 @@ public class DecoratedJsonValueImpl implements DecoratedJsonValue {
     }
 
     @Override
+    public char getSeparator() {
+        return this.separator;
+    }
+
+    @Override
     public ValueType getValueType() {
         return this.delegate.getValueType();
     }
 
     @Override
     public JsonObject asJsonObject() {
-        return new DecoratedJsonObject(this.delegate, this.decorator, this.path, this.getParent());
+        return new DecoratedJsonObject(this.delegate, this.decorator, this.path, this.getParent(), this.getSeparator());
     }
 
     @Override
     public JsonArray asJsonArray() {
-        return new DecoratedJsonArray(this.delegate, this.decorator, this.path, this.getParent());
+        return new DecoratedJsonArray(this.delegate, this.decorator, this.path, this.getParent(), this.getSeparator());
     }
 
 

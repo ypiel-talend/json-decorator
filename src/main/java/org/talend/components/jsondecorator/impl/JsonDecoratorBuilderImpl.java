@@ -7,7 +7,12 @@ import javax.json.JsonValue;
 
 public class JsonDecoratorBuilderImpl implements JsonDecoratorBuilder {
 
+    private final char separator;
     private final Decorator decorator = new Decorator();
+
+    JsonDecoratorBuilderImpl(char separator){
+        this.separator = separator;
+    }
 
     @Override
     public JsonDecoratorBuilder cast(@NonNull String path, @NonNull ValueTypeExtended type) {
@@ -41,7 +46,7 @@ public class JsonDecoratorBuilderImpl implements JsonDecoratorBuilder {
         if(this.decorator.getAllConfigurations().isEmpty()){
             return json;
         }
-        return new DecoratedJsonValueImpl(json, decorator, rootPath, null);
+        return new DecoratedJsonValueImpl(json, decorator, rootPath, null, separator);
     }
 
 }

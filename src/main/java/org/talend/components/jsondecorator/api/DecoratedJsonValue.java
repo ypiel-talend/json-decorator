@@ -10,4 +10,6 @@ public interface DecoratedJsonValue extends JsonValue {
 
     JsonValue getParent();
 
+    char getSeparator();
+
 }

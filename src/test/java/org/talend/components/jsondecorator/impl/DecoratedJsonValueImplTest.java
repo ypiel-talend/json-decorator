@@ -11,9 +11,13 @@ import javax.json.JsonArray;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonPatch;
+import javax.json.JsonReader;
 import javax.json.JsonString;
 import javax.json.JsonValue;
+import javax.json.JsonWriter;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 class DecoratedJsonValueImplTest {
+    private static boolean OUTPUT_JSON_DIFF = false;
 
     @Test
     public void ident() {
@@ -61,17 +66,19 @@ class DecoratedJsonValueImplTest {
                 .cast("/content/*/bag/*", JsonDecoratorBuilder.ValueTypeExtended.STRING)
                 .build(json);
 
-        JsonPatch diff = Json.createDiff(json.asJsonObject(), decoratedJsonValue.asJsonObject());
-        if (true) {
+       /* JsonPatch diff = Json.createDiff(json.asJsonObject(), decoratedJsonValue.asJsonObject());
+        if (false) {
             // Display the diff
             diff.toJsonArray().stream().forEach(d -> System.out.println(String.format("%s=%s", d.asJsonObject().getString("path"), d.toString())));
-        }
+        }*/
 
-        Map<String, JsonValue> diffMap = diff.toJsonArray().stream().collect(Collectors.toMap(j -> j.asJsonObject().getString("path").toString(), j -> j));
+        //Map<String, JsonValue> diffMap = diff.toJsonArray().stream().collect(Collectors.toMap(j -> j.asJsonObject().getString("path").toString(), j -> j));
 
-        Properties prop = TestUtil.loadProperties("/diff/forceTypes.properties");
-        prop.forEach((k, v) -> Assertions.assertEquals(v, diffMap.get(k).toString()));
-        Assertions.assertEquals(prop.size(), diff.toJsonArray().size());
+        //Properties prop = TestUtil.loadProperties("/diff/forceTypes.properties");
+        /*prop.forEach((k, v) -> Assertions.assertEquals(v, diffMap.get(k).toString()));
+        Assertions.assertEquals(prop.size(), diff.toJsonArray().size());*/
+
+        compareWithJsonDiff(json.asJsonObject(), decoratedJsonValue.asJsonObject(), "/diff/forceTypes.properties");
 
         JsonNumber content_length_value = decoratedJsonValue.asJsonObject().getJsonNumber("content_length");
         JsonValue.ValueType content_length_type = content_length_value.getValueType();
@@ -85,6 +92,23 @@ class DecoratedJsonValueImplTest {
         });
 
     }
+    @Test
+    public void forceTypesWithSeparator() throws IOException {
+        JsonValue json = TestUtil.loadJson("/json/geologistsComplex.json");
+
+        JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder('.');
+        JsonValue decoratedJsonValue = builder
+                .cast(".content_length", JsonDecoratorBuilder.ValueTypeExtended.FLOAT)
+                .cast(".content.*.age", JsonDecoratorBuilder.ValueTypeExtended.FLOAT)
+                .cast(".content.*.name", JsonDecoratorBuilder.ValueTypeExtended.ARRAY)
+                .cast(".content.*.address.zipcode", JsonDecoratorBuilder.ValueTypeExtended.FLOAT)
+                .cast(".content.*.tel", JsonDecoratorBuilder.ValueTypeExtended.INT)
+                .cast(".content.*.bag.*", JsonDecoratorBuilder.ValueTypeExtended.STRING)
+                .build(json);
+
+        compareWithJsonDiff(json.asJsonObject(), decoratedJsonValue.asJsonObject(), "/diff/forceTypes.properties");
+    }
+
 
     @Test
     public void forceTypesToNullValue() throws IOException {
@@ -401,6 +425,45 @@ class DecoratedJsonValueImplTest {
         Assertions.assertEquals(6, nestedArray.getInt(1));
         Assertions.assertEquals(7, nestedArray.getInt(2));
         Assertions.assertEquals(8, nestedArray.getInt(3));
+    }
+
+    private void compareWithJsonDiff(JsonObject o1, JsonObject o2, String expectedResourceProperty) throws IOException {
+        JsonPatch diff = Json.createDiff(o1.asJsonObject(), o2.asJsonObject());
+
+        if (OUTPUT_JSON_DIFF) {
+            // Display the diff
+            diff.toJsonArray().stream().forEach(d -> System.out.println(String.format("%s=%s", d.asJsonObject().getString("path"), d.toString())));
+        }
+
+        Map<String, JsonValue> diffMap = diff.toJsonArray().stream().collect(Collectors.toMap(j -> j.asJsonObject().getString("path").toString(), j -> j));
+        Properties prop = TestUtil.loadProperties(expectedResourceProperty);
+
+        prop.forEach((k, v) -> Assertions.assertEquals(v, diffMap.get(k).toString()));
+        Assertions.assertEquals(prop.size(), diff.toJsonArray().size());
+    }
+
+    @Test
+    public void serializationTest() throws IOException {
+        JsonValue json = TestUtil.loadJson("/json/simple.json");
+
+        JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
+        JsonObject decoratedJsonValue = builder
+                .cast("/address1", JsonDecoratorBuilder.ValueTypeExtended.OBJECT, "{\"city\": \"Nantes\"}")
+                .cast("/age", JsonDecoratorBuilder.ValueTypeExtended.STRING)
+                .cast("/address2", JsonDecoratorBuilder.ValueTypeExtended.ARRAY)
+                .build(json).asJsonObject();
+
+        StringWriter sw = new StringWriter();
+        JsonWriter writer = Json.createWriter(sw);
+        writer.write(decoratedJsonValue);
+        String serialized = sw.toString();
+
+        JsonReader reader = Json.createReader(new StringReader(serialized));
+        JsonValue newJsonValue = reader.readValue();
+
+        compareWithJsonDiff(json.asJsonObject(), newJsonValue.asJsonObject(), "/diff/afterSerialization.properties");
+
+
     }
 
 }

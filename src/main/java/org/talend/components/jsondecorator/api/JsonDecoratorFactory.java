@@ -4,6 +4,10 @@ import javax.json.JsonValue;
 
 public interface JsonDecoratorFactory {
 
-    JsonDecoratorBuilder createBuilder();
+    JsonDecoratorBuilder createBuilder(char separator);
+
+    default JsonDecoratorBuilder createBuilder(){
+        return createBuilder('/');
+    }
 
 }

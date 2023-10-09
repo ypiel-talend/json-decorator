@@ -19,20 +19,20 @@ class DecoratedJsonObject extends DecoratedJsonValueImpl implements JsonObject {
 
     private final JsonObject delegateAsJsonObject;
 
-    DecoratedJsonObject(JsonValue delegate, JsonDecoratorBuilder.JsonDecorator decorator, String path, JsonValue parent) {
-        super(delegate, decorator, path, parent);
+    DecoratedJsonObject(JsonValue delegate, JsonDecoratorBuilder.JsonDecorator decorator, String path, JsonValue parent, char separator) {
+        super(delegate, decorator, path, parent, separator);
         this.delegateAsJsonObject = JsonObject.class.cast(super.getDelegate());
     }
 
 
     @Override
     public JsonArray getJsonArray(String s) {
-        return new DecoratedJsonArray(this.get(s), this.getDecorator(), this.buildPath(s), this);
+        return new DecoratedJsonArray(this.get(s), this.getDecorator(), this.buildPath(s), this, this.getSeparator());
     }
 
     @Override
     public DecoratedJsonObject getJsonObject(String s) {
-        return new DecoratedJsonObject(this.delegateAsJsonObject.getJsonObject(s), this.getDecorator(), this.buildPath(s), this);
+        return new DecoratedJsonObject(this.delegateAsJsonObject.getJsonObject(s), this.getDecorator(), this.buildPath(s), this, this.getSeparator());
     }
 
     @Override
@@ -112,14 +112,14 @@ class DecoratedJsonObject extends DecoratedJsonValueImpl implements JsonObject {
             List<JsonDecoratorBuilder.JsonDecoratorConfiguration> childCast = this.getDecorator().getConfigurations(childPath, JsonDecoratorBuilder.JsonDecoratorAction.CAST);
 
             if (delegatedValue.getValueType() == ValueType.OBJECT) {
-                delegatedValue = new DecoratedJsonObject(delegatedValue, this.getDecorator(), childPath, this);
+                delegatedValue = new DecoratedJsonObject(delegatedValue, this.getDecorator(), childPath, this, this.getSeparator());
             } else if (delegatedValue.getValueType() == ValueType.ARRAY) {
-                delegatedValue = new DecoratedJsonArray(delegatedValue, this.getDecorator(), childPath, this);
+                delegatedValue = new DecoratedJsonArray(delegatedValue, this.getDecorator(), childPath, this, this.getSeparator());
             }
             JsonValue cast = this.getDecorator().cast(childPath, delegatedValue);
 
             if (!childCast.isEmpty() && cast.getValueType() == ValueType.OBJECT) {
-                cast = new DecoratedJsonObject(cast, this.getDecorator(), childPath, this);
+                cast = new DecoratedJsonObject(cast, this.getDecorator(), childPath, this, this.getSeparator());
             }
             return cast;
         } catch (JsonDecoratorCastException e) {

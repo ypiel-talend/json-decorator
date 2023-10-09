@@ -20,8 +20,8 @@ public class JsonDecoratorFactoryImpl implements JsonDecoratorFactory {
     }
 
     @Override
-    public JsonDecoratorBuilder createBuilder() {
-        return new JsonDecoratorBuilderImpl();
+    public JsonDecoratorBuilder createBuilder(char separator) {
+        return new JsonDecoratorBuilderImpl(separator);
     }
 
 
