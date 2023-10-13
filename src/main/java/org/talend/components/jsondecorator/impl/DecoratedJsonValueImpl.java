@@ -21,21 +21,22 @@ public class DecoratedJsonValueImpl implements DecoratedJsonValue {
     DecoratedJsonValueImpl(JsonValue delegate, JsonDecoratorBuilder.JsonDecorator decorator, String path, JsonValue parent, char separator) {
         this.delegate = delegate;
         this.decorator = decorator;
-        this.path = path;
+        this.path = path == null ? "" : path;
         this.parent = parent;
         this.separator = separator;
     }
 
     protected String buildPath(String child) {
+        String p = this.path;
         if (this.path == null) {
-            this.path = "" + this.separator;
+            p = "" + this.separator;
         }
 
-        if (this.path.charAt(this.path.length() - 1) != separator) {
-            this.path += this.getSeparator();
+        if (p.isEmpty() || p.charAt(this.path.length() - 1) != separator) {
+            p += this.getSeparator();
         }
 
-        return this.path + child;
+        return p + child;
     }
 
     JsonValue getDelegate() {

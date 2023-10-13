@@ -92,6 +92,7 @@ class DecoratedJsonValueImplTest {
         });
 
     }
+
     @Test
     public void forceTypesWithSeparator() throws IOException {
         JsonValue json = TestUtil.loadJson("/json/geologistsComplex.json");
@@ -427,6 +428,25 @@ class DecoratedJsonValueImplTest {
         Assertions.assertEquals(8, nestedArray.getInt(3));
     }
 
+    @Test
+    public void objectFilterAndCasts() throws IOException {
+        JsonValue json = TestUtil.loadJson("/json/geologistsUnconsistentAddresses.json");
+
+        JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder('.');
+        JsonValue decoratedJsonValue = builder
+                .cast(".content_length", JsonDecoratorBuilder.ValueTypeExtended.STRING)
+                .filterByType(".content.*.addresses", JsonDecoratorBuilder.ValueTypeExtended.OBJECT)
+                .build(json);
+
+        JsonObject jsonObject = decoratedJsonValue.asJsonObject();
+        JsonValue contentLength = jsonObject.get("content_length");
+        Assertions.assertEquals(JsonValue.ValueType.STRING, contentLength.getValueType());
+
+        JsonArray content = jsonObject.getJsonArray("content");
+        content.stream().forEach(e -> Assertions.assertEquals(3, e.asJsonObject().getJsonArray("addresses").size()));
+
+    }
+
     private void compareWithJsonDiff(JsonObject o1, JsonObject o2, String expectedResourceProperty) throws IOException {
         JsonPatch diff = Json.createDiff(o1.asJsonObject(), o2.asJsonObject());
 
@@ -453,10 +473,7 @@ class DecoratedJsonValueImplTest {
                 .cast("/address2", JsonDecoratorBuilder.ValueTypeExtended.ARRAY)
                 .build(json).asJsonObject();
 
-        StringWriter sw = new StringWriter();
-        JsonWriter writer = Json.createWriter(sw);
-        writer.write(decoratedJsonValue);
-        String serialized = sw.toString();
+        String serialized = jsonObjectToString(decoratedJsonValue);
 
         JsonReader reader = Json.createReader(new StringReader(serialized));
         JsonValue newJsonValue = reader.readValue();
@@ -464,6 +481,14 @@ class DecoratedJsonValueImplTest {
         compareWithJsonDiff(json.asJsonObject(), newJsonValue.asJsonObject(), "/diff/afterSerialization.properties");
 
 
+    }
+
+    private String jsonObjectToString(JsonObject decoratedJsonValue) {
+        StringWriter sw = new StringWriter();
+        JsonWriter writer = Json.createWriter(sw);
+        writer.write(decoratedJsonValue);
+        String serialized = sw.toString();
+        return serialized;
     }
 
 }

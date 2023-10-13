@@ -1,0 +1,72 @@
+{
+  "description": "List of some famous geologists",
+  "content_length": 5,
+  "author": "A. Smith",
+  "content": [
+    {
+      "name": "Maurice Krafft",
+      "age": 35,
+      "tel": "12345",
+      "female": false,
+      "addresses":[
+        "aaaaaaa",
+        1111111,
+        {"city": "cityA",  "zipcode": 1},
+        {"city": "cityB",  "zipcode": 2},
+        {"city": "cityC",  "zipcode": 3}
+      ]
+    },
+    {
+      "name": "Katia Krafft",
+      "age": 49,
+      "tel": "223344",
+      "female": true,
+      "addresses":[
+        {"city": "cityA2",  "zipcode": 11},
+        {"city": "cityB2",  "zipcode": "00022"},
+        {"city": "cityC2",  "zipcode": 33},
+        "bbbbbb",
+        222222
+      ]
+    },
+    {
+      "name": "Pline l'Ancien",
+      "age": "55",
+      "tel": "33445566",
+      "female": false,
+      "addresses":[
+        33333333,
+        {"city": "cityA3",  "zipcode": "00111"},
+        {"city": "cityB3",  "zipcode": "00222"},
+        {"city": "cityC3",  "zipcode": 333},
+        "cccccccc"
+      ]
+    },
+    {
+      "name": "James Hutton",
+      "age": "70",
+      "tel": "44556677",
+      "female": false,
+      "addresses":[
+        {"city": "cityA4",  "zipcode": "01111"},
+        4444444,
+        {"city": "cityB4",  "zipcode": "02222"},
+        "ddddddd",
+        {"city": "cityC4",  "zipcode": "03333"}
+      ]
+    },
+    {
+      "name": "Aline Peltier",
+      "age": 40,
+      "tel": "556677",
+      "female": false,
+      "addresses":[
+        {"city": "cityA5",  "zipcode": "11111"},
+        {"city": "cityB5",  "zipcode": 22222},
+        "eeeeeeee",
+        {"city": "cityC5",  "zipcode": "33333"},
+        555555
+      ]
+    }
+  ]
+}
