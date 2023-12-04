@@ -3,13 +3,14 @@ package org.talend.components.jsondecorator.impl;
 import javax.json.JsonValue;
 import org.talend.components.jsondecorator.api.JsonDecorator;
 
-import java.util.function.Function;
+import java.util.Map;
+import java.util.Set;
 
 public class JsonObjectDecorator implements JsonDecorator {
 
-  private final Function<String, JsonDecorator> fieldsDecorators;
+  private final Map<String, JsonDecorator> fieldsDecorators;
 
-  public JsonObjectDecorator(final Function<String, JsonDecorator> fieldsDecorators) {
+  JsonObjectDecorator(final Map<String, JsonDecorator> fieldsDecorators) {
     this.fieldsDecorators = fieldsDecorators;
   }
 
@@ -21,11 +22,10 @@ public class JsonObjectDecorator implements JsonDecorator {
     if (rawValue.getValueType() != JsonValue.ValueType.OBJECT) {
       throw new IllegalArgumentException("Not a json object but " + rawValue.getValueType());
     }
-    return new DecoratedJsonObjectImpl(rawValue.asJsonObject(), fieldsDecorators);
+    return new DecoratedJsonObjectImpl(rawValue.asJsonObject(), fieldsDecorators::get);
   }
 
-  /*@Override
-  public JsonValue.ValueType jsonType() {
-    return JsonValue.ValueType.OBJECT;
-  }*/
+  Set<Map.Entry<String, JsonDecorator>> getFieldsDecorators() {
+    return fieldsDecorators.entrySet();
+  }
 }

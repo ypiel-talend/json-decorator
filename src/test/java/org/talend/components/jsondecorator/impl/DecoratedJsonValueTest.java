@@ -2,6 +2,7 @@ package org.talend.components.jsondecorator.impl;
 
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonPatch;
@@ -14,7 +15,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.talend.components.jsondecorator.api.JsonDecorator;
-import org.talend.components.jsondecorator.api.JsonDecoratorBuilder;
+import org.talend.components.jsondecorator.api.JsonDecorator.FieldPath;
+import org.talend.components.jsondecorator.api.ValueTypeExtended;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -32,7 +34,7 @@ class DecoratedJsonValueTest {
     private static boolean OUTPUT_JSON_DIFF = false;
 
     @Test
-    public void ident() {
+    void ident() {
         JsonValue json = TestUtil.loadJson("/json/geologistsComplex.json");
 
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
@@ -49,68 +51,44 @@ class DecoratedJsonValueTest {
         Assertions.assertTrue(content_length_value.isIntegral());
 
         JsonArray contentArray = decoratedJsonValue.asJsonObject().getJsonArray("content");
-        contentArray.stream().forEach(e -> {
+        contentArray.forEach(e -> {
             JsonObject element = e.asJsonObject();
             Assertions.assertEquals(JsonValue.ValueType.STRING, element.get("tel").getValueType());
         });
     }
 
     @Test
-    public void forceTypes() throws IOException {
+    void forceTypes() throws IOException {
         JsonValue json = TestUtil.loadJson("/json/geologistsComplex.json");
 
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
 
         JsonDecorator addressDecorator = factory.object()
-            .decorator("zipcode", factory.value(JsonDecoratorBuilder.ValueTypeExtended.FLOAT).build())
+            .decorateField("zipcode", factory.value(ValueTypeExtended.FLOAT).build())
             .build();
 
         JsonDecorator arrayBag = factory.array()
-            .decorator(null, factory.value(JsonDecoratorBuilder.ValueTypeExtended.STRING).build())
+            .cast(factory.value(ValueTypeExtended.STRING).build())
             .build();
 
         JsonDecorator contentDecorator = factory.object()
-            .decorator("age", factory.value(JsonDecoratorBuilder.ValueTypeExtended.FLOAT).build())
-            .decorator("name", factory.value(JsonDecoratorBuilder.ValueTypeExtended.ARRAY).build())
-            .decorator("address", addressDecorator)
-            .decorator("tel", factory.value(JsonDecoratorBuilder.ValueTypeExtended.INT).build())
-            .decorator("bag", arrayBag)
+            .decorateField("age", factory.value(ValueTypeExtended.FLOAT))
+            .decorateField("name", factory.value(ValueTypeExtended.ARRAY))
+            .decorateField("address", addressDecorator)
+            .decorateField("tel", factory.value(ValueTypeExtended.INT))
+            .decorateField("bag", arrayBag)
             .build();
 
 
         JsonDecorator decorator = factory.object()
-            .decorator("content_length", factory.value(JsonDecoratorBuilder.ValueTypeExtended.FLOAT).build())
-            .decorator("content",
-                factory.array().decorator(JsonDecoratorBuilder.ValueTypeExtended.OBJECT,
+            .decorateField("content_length", factory.value(ValueTypeExtended.FLOAT))
+            .decorateField("content",
+                factory.array().decorator(ValueTypeExtended.OBJECT,
                     contentDecorator).build())
             .build();
 
         JsonValue decoratedJsonValue = decorator.decorate(json);
 
-            JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
-        JsonValue decoratedJsonValue2 =
-
-
-            builder
-                .cast("/content_length", JsonDecoratorBuilder.ValueTypeExtended.FLOAT)
-                .cast("/content/*/age", JsonDecoratorBuilder.ValueTypeExtended.FLOAT)
-                .cast("/content/*/name", JsonDecoratorBuilder.ValueTypeExtended.ARRAY)
-                .cast("/content/*/address/zipcode", JsonDecoratorBuilder.ValueTypeExtended.FLOAT)
-                .cast("/content/*/tel", JsonDecoratorBuilder.ValueTypeExtended.INT)
-                .cast("/content/*/bag/*", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-                .build(json);
-
-       /* JsonPatch diff = Json.createDiff(json.asJsonObject(), decoratedJsonValue.asJsonObject());
-        if (false) {
-            // Display the diff
-            diff.toJsonArray().stream().forEach(d -> System.out.println(String.format("%s=%s", d.asJsonObject().getString("path"), d.toString())));
-        }*/
-
-        //Map<String, JsonValue> diffMap = diff.toJsonArray().stream().collect(Collectors.toMap(j -> j.asJsonObject().getString("path").toString(), j -> j));
-
-        //Properties prop = TestUtil.loadProperties("/diff/forceTypes.properties");
-        /*prop.forEach((k, v) -> Assertions.assertEquals(v, diffMap.get(k).toString()));
-        Assertions.assertEquals(prop.size(), diff.toJsonArray().size());*/
 
         compareWithJsonDiff(json.asJsonObject(), decoratedJsonValue.asJsonObject(), "/diff/forceTypes2.properties");
 
@@ -120,7 +98,7 @@ class DecoratedJsonValueTest {
         Assertions.assertFalse(content_length_value.isIntegral());
 
         JsonArray contentArray = decoratedJsonValue.asJsonObject().getJsonArray("content");
-        contentArray.stream().forEach(e -> {
+        contentArray.forEach(e -> {
             JsonObject element = e.asJsonObject();
             Assertions.assertEquals(JsonValue.ValueType.NUMBER, element.get("tel").getValueType());
         });
@@ -128,25 +106,60 @@ class DecoratedJsonValueTest {
     }
 
     @Test
-    public void forceTypesWithSeparator() throws IOException {
+    void forceTypesWithSeparator() throws IOException {
         JsonValue json = TestUtil.loadJson("/json/geologistsComplex.json");
 
-        JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder('.');
-        JsonValue decoratedJsonValue = builder
-                .cast(".content_length", JsonDecoratorBuilder.ValueTypeExtended.FLOAT)
-                .cast(".content.*.age", JsonDecoratorBuilder.ValueTypeExtended.FLOAT)
-                .cast(".content.*.name", JsonDecoratorBuilder.ValueTypeExtended.ARRAY)
-                .cast(".content.*.address.zipcode", JsonDecoratorBuilder.ValueTypeExtended.FLOAT)
-                .cast(".content.*.tel", JsonDecoratorBuilder.ValueTypeExtended.INT)
-                .cast(".content.*.bag.*", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-                .build(json);
+        JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
+        JsonDecorator contentDecorator = factory.object()
+            .decorateField("age", factory.value(ValueTypeExtended.FLOAT))
+            .decorateField("name", factory.value(ValueTypeExtended.ARRAY))
+            .decorateField(FieldPath.from("address/zipcode"),
+                factory.value(ValueTypeExtended.FLOAT))
+            .decorateField("tel", factory.value(ValueTypeExtended.INT))
+            .decorateField("bag",
+                factory.array().cast(factory.value(ValueTypeExtended.STRING).build()))
+            .build();
+        JsonDecorator decorator = factory.object()
+            .decorateField("content_length", factory.value(ValueTypeExtended.FLOAT))
+            .decorateField("content", factory.array().cast(contentDecorator))
+            .build();
 
-        compareWithJsonDiff(json.asJsonObject(), decoratedJsonValue.asJsonObject(), "/diff/forceTypes.properties");
+        JsonValue decoratedJsonValue = decorator.decorate(json);
+
+
+        compareWithJsonDiff(json.asJsonObject(), decoratedJsonValue.asJsonObject(), "/diff/forceTypes2.properties");
+    }
+
+    @Test
+    void testPaths() {
+        JsonValue json = TestUtil.loadJson("/json/Object.json");
+        JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
+        JsonDecorator decorator = factory.object()
+            .decorateField(FieldPath.from("an_object/nested_bool"),
+                factory.value(ValueTypeExtended.STRING))
+            .decorateField(FieldPath.from("an_object/nested_int"),
+                factory.value(ValueTypeExtended.STRING))
+            .decorateField(FieldPath.from("an_object/nested_float"),
+                factory.value(ValueTypeExtended.STRING))
+            .decorateField(FieldPath.from("an_object/nested_string"),
+                factory.value(ValueTypeExtended.ARRAY))
+            .decorateField(FieldPath.from("an_object/nested_array"),
+                factory.value(ValueTypeExtended.STRING))
+            .build();
+        JsonValue decoratedJsonValue = decorator.decorate(json);
+        JsonObject anObject = decoratedJsonValue.asJsonObject().getJsonObject("an_object");
+
+        Assertions.assertEquals("false", anObject.getString("nested_bool"));
+        Assertions.assertEquals("20", anObject.getString("nested_int"));
+        Assertions.assertEquals("7.14", anObject.getString("nested_float"));
+        Assertions.assertEquals(Json.createArrayBuilder().add("Bye").build(),
+            anObject.getJsonArray("nested_string"));
+        Assertions.assertEquals("[5,6,7,8]", anObject.getString("nested_array"));
     }
 
 
     @Test
-    public void forceTypesToNullValue() throws IOException {
+    void forceTypesToNullValue() {
         JsonValue json = TestUtil.loadJson("/json/simple.json");
 
         JsonObject defaultName =
@@ -154,63 +167,50 @@ class DecoratedJsonValueTest {
 
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
         JsonDecorator decorator = factory.object()
-            .decorator("address1",
-                factory.value(JsonDecoratorBuilder.ValueTypeExtended.OBJECT)
-                    .defaultValue(defaultName)
-                    .build())
+            .decorateField("address1",
+                factory.value(ValueTypeExtended.OBJECT)
+                    .defaultValue(defaultName))
             .build();
 
         JsonObject decoratedJsonValue = decorator.decorate(json).asJsonObject();
-
-       // JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
-       /* JsonObject decoratedJsonValue = builder
-                .cast("/address1", JsonDecoratorBuilder.ValueTypeExtended.OBJECT, "{\"name\": \"peter\"}")
-                .build(json).asJsonObject();*/
 
         Assertions.assertEquals(JsonValue.ValueType.STRING, decoratedJsonValue.get("name").getValueType());
         JsonValue address1 = decoratedJsonValue.get("address1");
         Assertions.assertEquals(JsonValue.ValueType.OBJECT, address1.getValueType());
         Assertions.assertEquals("peter", address1.asJsonObject().getString("name"));
-
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"STRING", "INT", "BOOLEAN"})
-    public void filterArrayByOneType(String filterTypeStr) throws IOException {
-        JsonDecoratorBuilder.ValueTypeExtended valueTypeExtended = JsonDecoratorBuilder.ValueTypeExtended.valueOf(filterTypeStr);
+    void filterArrayByOneType(String filterTypeStr) throws IOException {
+        ValueTypeExtended valueTypeExtended = ValueTypeExtended.valueOf(filterTypeStr);
         JsonValue json = TestUtil.loadJson("/json/geologistsComplex.json");
 
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
-        JsonDecorator bagDecorator = factory.object().decorator("bag",
+        JsonDecorator bagDecorator = factory.object().decorateField("bag",
             factory.array().filter(valueTypeExtended).build()).build();
-        JsonDecorator decorator = factory.object().decorator("content",
-                factory.array().decorator(JsonDecoratorBuilder.ValueTypeExtended.OBJECT,
+        JsonDecorator decorator = factory.object().decorateField("content",
+                factory.array().decorator(ValueTypeExtended.OBJECT,
                         bagDecorator)
                     .build())
             .build();
 
         JsonValue decoratedJsonValue = decorator.decorate(json);
 
-      //  JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
-      //  JsonValue decoratedJsonValue = builder
-      //          .filterByType("/content/*/bag", valueTypeExtended)
-      //          .build(json);
-
         JsonArray content = decoratedJsonValue.asJsonObject().getJsonArray("content");
         for (JsonObject obj : content.getValuesAs(JsonObject.class)) {
             JsonArray bag = obj.getJsonArray("bag");
-            bag.stream().forEach(v -> Assertions.assertTrue(valueTypeExtended.accept(v)));
+            bag.forEach(v -> Assertions.assertTrue(valueTypeExtended.test(v)));
             Assertions.assertEquals(3, bag.size());
         }
-
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"INT", "STRING,INT", "BOOLEAN,INT", "BOOLEAN,INT,STRING"})
-    public void filterArrayByOneSeveralTypes(String filterTypeStrs) throws IOException {
+    void filterArrayByOneSeveralTypes(String filterTypeStrs) throws IOException {
         String[] typesStr = filterTypeStrs.split(",");
-        List<JsonDecoratorBuilder.ValueTypeExtended> valueTypesExtended = Arrays.stream(typesStr)
-                .map(t -> JsonDecoratorBuilder.ValueTypeExtended.valueOf(t))
+        List<ValueTypeExtended> valueTypesExtended = Arrays.stream(typesStr)
+                .map(ValueTypeExtended::valueOf)
                 .collect(Collectors.toList());
 
         JsonValue json = TestUtil.loadJson("/json/geologistsComplex.json");
@@ -219,17 +219,14 @@ class DecoratedJsonValueTest {
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
 
         JsonDecorator.ArrayDecoratorBuilder bagArrayBuilder = factory.array();
-        valueTypesExtended.forEach(t -> bagArrayBuilder.filter(t));
+        valueTypesExtended.forEach(bagArrayBuilder::filter);
         JsonDecorator bagArray = bagArrayBuilder.build();
-        JsonDecorator bagObjectDecorator = factory.object().decorator("bag", bagArray).build();
+        JsonDecorator bagObjectDecorator = factory.object().decorateField("bag", bagArray).build();
 
-        JsonDecorator decorator = factory.object().decorator("content",
-            factory.array().decorator(JsonDecoratorBuilder.ValueTypeExtended.OBJECT,
-                bagObjectDecorator).build()).build();
+        JsonDecorator decorator = factory.object().decorateField("content",
+            factory.array().decorator(ValueTypeExtended.OBJECT,
+                bagObjectDecorator)).build();
 
-
-        //JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
-        //valueTypesExtended.stream().forEach(t -> builder.filterByType("/content/*/bag", t));
         JsonValue decoratedJsonValue = decorator.decorate(json);
 
         JsonArray content = decoratedJsonValue.asJsonObject().getJsonArray("content");
@@ -247,13 +244,13 @@ class DecoratedJsonValueTest {
             "BOOLEAN,INT",
             "BOOLEAN,INT,STRING"
     })
-    public void filterArraySeveralTypes(String filterTypesStr) throws IOException {
+    void filterArraySeveralTypes(String filterTypesStr) throws IOException {
         JsonValue json = TestUtil.loadJson("/json/geologistsComplex.json");
 
 
-        List<JsonDecoratorBuilder.ValueTypeExtended> types = Arrays.stream(filterTypesStr.split(","))
-                .map(s -> s.trim())
-                .map(s -> JsonDecoratorBuilder.ValueTypeExtended.valueOf(s))
+        List<ValueTypeExtended> types = Arrays.stream(filterTypesStr.split(","))
+                .map(String::trim)
+                .map(ValueTypeExtended::valueOf)
                 .collect(Collectors.toList());
 
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
@@ -261,16 +258,11 @@ class DecoratedJsonValueTest {
         types.forEach(bagBuilder::filter);
 
         JsonDecorator decorator = factory.object()
-            .decorator("content",
-                factory.array().decorator(JsonDecoratorBuilder.ValueTypeExtended.OBJECT,
-                    factory.object().decorator("bag", bagBuilder.build()).build()).build())
+            .decorateField("content",
+                factory.array().decorator(ValueTypeExtended.OBJECT,
+                    factory.object().decorateField("bag", bagBuilder).build()).build())
             .build();
 
-        /*JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
-
-        types.stream()
-                .forEach(t ->
-                        builder.filterByType("/content/bag", t));*/
 
         JsonValue decoratedJsonValue = decorator.decorate(json);
 
@@ -278,7 +270,7 @@ class DecoratedJsonValueTest {
         for (JsonObject obj : content.getValuesAs(JsonObject.class)) {
             JsonArray bag = obj.getJsonArray("bag");
             Map<JsonValue.ValueType, Long> collect = bag.stream().collect(Collectors.groupingBy(JsonValue::getValueType, Collectors.counting()));
-            for (JsonDecoratorBuilder.ValueTypeExtended t : types) {
+            for (ValueTypeExtended t : types) {
                 switch (t) {
                     case STRING:
                         Assertions.assertEquals(3, collect.get(JsonValue.ValueType.STRING));
@@ -298,35 +290,29 @@ class DecoratedJsonValueTest {
     }
 
     @Test
-    public void arrayOfArrayCast() {
+    void arrayOfArrayCast() {
         JsonValue json = TestUtil.loadJson("/json/arrayOfArrays.json");
 
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
 
-        JsonDecorator decoratorSecondArray = factory.array().decorator(JsonDecoratorBuilder.ValueTypeExtended.ARRAY,
-            factory.array().decorator(null, factory.value(JsonDecoratorBuilder.ValueTypeExtended.STRING).build())
+        JsonDecorator decoratorSecondArray = factory.array().decorator(ValueTypeExtended.ARRAY,
+            factory.array().decorator(null, factory.value(ValueTypeExtended.STRING).build())
                 .build())
             .build();
         JsonDecorator.ObjectDecoratorBuilder decoratorBuilder = factory.object()
-            .decorator("second_array", decoratorSecondArray);
+            .decorateField("second_array", decoratorSecondArray);
 
-        JsonDecorator decoratorFourthArray = factory.array().decorator(JsonDecoratorBuilder.ValueTypeExtended.ARRAY,
+        JsonDecorator decoratorFourthArray = factory.array().decorator(ValueTypeExtended.ARRAY,
             decoratorSecondArray).build();
-        JsonDecorator decorator = decoratorBuilder.decorator("fourth_array", decoratorFourthArray).build();
+        JsonDecorator decorator = decoratorBuilder.decorateField("fourth_array", decoratorFourthArray).build();
         JsonValue decoratedJsonValue = decorator.decorate(json);
-
-        // JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
-        // JsonValue decoratedJsonValue = builder
-        //          .cast("/second_array/*/*", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-        //         .cast("/fourth_array/*/*/*", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-        //         .build(json);
 
         JsonValue jsonValue = decoratedJsonValue.asJsonObject().getJsonArray("first_array").getJsonArray(0).get(0);
         Assertions.assertEquals(JsonValue.ValueType.NUMBER, jsonValue.getValueType());
 
         List<String> expected = new ArrayList<>(Arrays.asList("1", "2", "one", "two", "three", "3"));
         decoratedJsonValue.asJsonObject().getJsonArray("second_array").getJsonArray(0)
-                .stream().forEach(e -> {
+                .forEach(e -> {
                     Assertions.assertEquals(JsonValue.ValueType.STRING, e.getValueType());
                     String stringValue = JsonString.class.cast(e).getString();
                     Assertions.assertTrue(expected.remove(stringValue), String.format("'%s' not found in expected values.", stringValue));
@@ -341,25 +327,18 @@ class DecoratedJsonValueTest {
     }
 
     @Test
-    public void arrayOfArrayCast2() throws IOException {
+    void arrayOfArrayCast2() throws IOException {
         JsonValue json = TestUtil.loadJson("/json/arrayOfArrays2.json");
-
-//        JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
-//        JsonValue decoratedJsonValue = builder
-//                .cast("/first_array/*", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-//                .cast("/second_array/*", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-//                .cast("/third_array/*/*", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-//                .build(json);
 
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
         JsonDecorator arrayStringItemDecorator = factory.array()
-            .decorator(null, factory.value(JsonDecoratorBuilder.ValueTypeExtended.STRING).build())
+            .decorator(null, factory.value(ValueTypeExtended.STRING).build())
             .build();
         JsonDecorator decorator = factory.object()
-            .decorator("first_array", arrayStringItemDecorator)
-            .decorator("second_array", arrayStringItemDecorator)
-            .decorator("third_array",
-                factory.array().decorator(JsonDecoratorBuilder.ValueTypeExtended.ARRAY, arrayStringItemDecorator).build())
+            .decorateField("first_array", arrayStringItemDecorator)
+            .decorateField("second_array", arrayStringItemDecorator)
+            .decorateField("third_array",
+                factory.array().decorator(ValueTypeExtended.ARRAY, arrayStringItemDecorator).build())
             .build();
         JsonValue decoratedJsonValue = decorator.decorate(json);
 
@@ -370,20 +349,21 @@ class DecoratedJsonValueTest {
         });
         Assertions.assertTrue(expected1.isEmpty());
 
-        decoratedJsonValue.asJsonObject().getJsonArray("second_array").stream()
+        decoratedJsonValue.asJsonObject().getJsonArray("second_array")
                 .forEach(e -> Assertions.assertEquals(JsonValue.ValueType.STRING, e.getValueType()));
 
-        decoratedJsonValue.asJsonObject().getJsonArray("third_array").stream()
+        decoratedJsonValue.asJsonObject().getJsonArray("third_array")
                 .forEach(e -> {
                     Assertions.assertEquals(JsonValue.ValueType.ARRAY, e.getValueType());
-                    e.asJsonArray().stream().forEach(i -> Assertions.assertEquals(JsonValue.ValueType.STRING, i.getValueType()));
+                    e.asJsonArray().forEach(i -> Assertions.assertEquals(JsonValue.ValueType.STRING, i.getValueType()));
                 });
 
 
         JsonPatch diff = Json.createDiff(json.asJsonObject(), decoratedJsonValue.asJsonObject());
         if (true) {
             // Display the diff
-            diff.toJsonArray().stream().forEach(d -> System.out.println(String.format("%s=%s", d.asJsonObject().getString("path"), d.toString())));
+            diff.toJsonArray().forEach(d -> System.out.println(String.format("%s=%s", d.asJsonObject().getString("path"),
+                d)));
         }
 
         Map<String, JsonValue> diffMap = diff.toJsonArray().stream().collect(Collectors.toMap(j -> j.asJsonObject().getString("path").toString(), j -> j));
@@ -400,46 +380,59 @@ class DecoratedJsonValueTest {
             "STRING",
             "INT"
     })
-    public void arrayOfArrayFilter(JsonDecoratorBuilder.ValueTypeExtended type) {
+    void arrayOfArrayFilter(ValueTypeExtended type) {
         JsonValue json = TestUtil.loadJson("/json/arrayOfArrays.json");
 
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
-        JsonDecorator decorator = factory.object().decorator("second_array",
-                factory.array().decorator(JsonDecoratorBuilder.ValueTypeExtended.ARRAY,
+        JsonDecorator decorator = factory.object().decorateField("second_array",
+                factory.array().decorator(ValueTypeExtended.ARRAY,
                         factory.array().filter(type).build()).build())
             .build();
 
-        // JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
-        // JsonValue decoratedJsonValue = builder
-        //         .filterByType("/second_array/*", type)
-        //         .build(json);
         JsonValue decoratedJsonValue = decorator.decorate(json);
 
-        List expected = new ArrayList<>();
-        if (type == JsonDecoratorBuilder.ValueTypeExtended.STRING) {
+        List<Object> expected = new ArrayList<>();
+        if (type == ValueTypeExtended.STRING) {
             expected.addAll(Arrays.asList("one", "two", "three"));
         } else {
             expected.addAll(Arrays.asList(1, 2, 3));
         }
         decoratedJsonValue.asJsonObject().getJsonArray("second_array").getJsonArray(0)
-                .stream().forEach(e -> {
-                    JsonValue.ValueType jsonType = type == JsonDecoratorBuilder.ValueTypeExtended.STRING ? JsonValue.ValueType.STRING : JsonValue.ValueType.NUMBER;
+                .forEach(e -> {
+                    JsonValue.ValueType jsonType = type == ValueTypeExtended.STRING ? JsonValue.ValueType.STRING : JsonValue.ValueType.NUMBER;
                     Assertions.assertEquals(jsonType, e.getValueType());
-                    Object stringValue = type == JsonDecoratorBuilder.ValueTypeExtended.STRING ? JsonString.class.cast(e).getString() : JsonNumber.class.cast(e).intValue();
+                    Object stringValue = type == ValueTypeExtended.STRING ? JsonString.class.cast(e).getString() : JsonNumber.class.cast(e).intValue();
                     Assertions.assertTrue(expected.remove(stringValue), String.format("'%s' not found in expected values.", stringValue));
                 });
         Assertions.assertTrue(expected.isEmpty());
     }
 
     @Test
-    public void ObjectEntrySet() {
+    void ObjectEntrySet() {
         JsonValue json = TestUtil.loadJson("/json/geologistsComplex.json");
 
-        JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder()
-                .cast("/content_length", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-                .cast("/content/*/objects/*/aaa", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-                .cast("/content/*/bag/*", JsonDecoratorBuilder.ValueTypeExtended.STRING);
-        JsonValue decoratedJsonValue = builder.build(json);
+        JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
+        JsonDecorator.ObjectDecoratorBuilder decoratorBuilder = factory.object();
+
+        decoratorBuilder.decorateField("content_length", factory.value(ValueTypeExtended.STRING).build());
+
+        JsonDecorator arrayDecorator = factory.array().decorator(ValueTypeExtended.OBJECT,
+            factory.object().decorateField("objects",
+                    factory.array().decorator(null,
+                        factory.object()
+                            .decorateField("aaa", factory.value(ValueTypeExtended.STRING).build())
+                            .build()
+                    ).build())
+                .decorateField("bag",
+                    factory.array()
+                        .decorator(null, factory.value(ValueTypeExtended.STRING).build())
+                        .build())
+                .build()
+        ).build();
+
+        decoratorBuilder.decorateField("content", arrayDecorator);
+        JsonDecorator decorator = decoratorBuilder.build();
+        JsonValue decoratedJsonValue = decorator.decorate(json);
 
         Set<Map.Entry<String, JsonValue>> entries = decoratedJsonValue.asJsonObject().entrySet();
 
@@ -458,14 +451,19 @@ class DecoratedJsonValueTest {
     }
 
     @Test
-    public void multiCast() throws IOException {
+    void multiCast() throws IOException {
         JsonValue json = TestUtil.loadJson("/json/geologistsComplex.json");
 
-        JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
-        JsonValue decoratedJsonValue = builder
-                .cast("/content/*/age", JsonDecoratorBuilder.ValueTypeExtended.ARRAY)
-                .cast("/content/*/age/*", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-                .build(json);
+        JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
+
+        JsonDecorator chain = factory.chain(factory.value(ValueTypeExtended.STRING).build(),
+            factory.value(ValueTypeExtended.ARRAY).build());
+
+        JsonDecorator ageDecorator = factory.array().decorator(ValueTypeExtended.OBJECT,
+                factory.object().decorateField("age", chain).build())
+            .build();
+        JsonDecorator decorator = factory.object().decorateField("content", ageDecorator).build();
+        JsonValue decoratedJsonValue = decorator.decorate(json);
 
         String[] expecteds = {"35", "49", "55", "70", "40"};
 
@@ -481,17 +479,34 @@ class DecoratedJsonValueTest {
     }
 
     @Test
-    public void sanitazeArray() {
+    void sanitazeArray() {
         JsonValue json = TestUtil.loadJson("/json/arrayToSanitize.json");
 
-        JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
-        builder.cast("/data/*/types", JsonDecoratorBuilder.ValueTypeExtended.ARRAY);
-        builder.filterByType("/data/*/types", JsonDecoratorBuilder.ValueTypeExtended.OBJECT);
-        builder.cast("/data/*/types/*/default", JsonDecoratorBuilder.ValueTypeExtended.STRING);
-        JsonValue decoratedJsonValue = builder.build(json);
+        JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
+
+
+        JsonDecorator typesDecorator = factory.object().decorateField("types",
+            factory.chain(factory.value(ValueTypeExtended.ARRAY).build(),
+                factory.array().decorator(ValueTypeExtended.OBJECT,
+                    factory.object().decorateField("default",
+                        factory.value(ValueTypeExtended.STRING)).build()).build()
+            )).build();
+        JsonDecorator decorator = factory.object().decorateField("data", factory.array().cast(typesDecorator)).build();
+
+        JsonValue decoratedJsonValue = decorator.decorate(json);
+
+        JsonDecorator defaultDecorator = factory.object()
+            .decorateField("default", factory.value(ValueTypeExtended.STRING).build())
+            .build();
+        factory.array().filter(ValueTypeExtended.OBJECT)
+            .decorator(null, defaultDecorator).build();
+
+
+        factory.object().decorateField("types",
+            factory.value(ValueTypeExtended.ARRAY).build());
 
         JsonArray dataArray = decoratedJsonValue.asJsonObject().getJsonArray("data");
-        dataArray.stream().forEach(e -> {
+        dataArray.forEach(e -> {
             e.asJsonObject().getJsonArray("types").stream().forEach(l -> Assertions.assertEquals(JsonValue.ValueType.OBJECT, l.getValueType()));
         });
 
@@ -510,25 +525,28 @@ class DecoratedJsonValueTest {
     }
 
     @Test
-    public void objectGetter() {
+    void objectGetter() {
         JsonValue json = TestUtil.loadJson("/json/Object.json");
 
-        JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
-        builder.cast("/a_bool", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-                .cast("/a_int", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-                .cast("/a_float", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-                .cast("/a_string", JsonDecoratorBuilder.ValueTypeExtended.ARRAY)
-                .cast("/an_array", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-                .cast("/an_object", JsonDecoratorBuilder.ValueTypeExtended.ARRAY);
-        JsonValue decoratedJsonValue = builder.build(json);
+        JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
+        JsonDecorator decorator = factory.object()
+            .decorateField("a_bool", factory.value(ValueTypeExtended.STRING))
+            .decorateField("a_int", factory.value(ValueTypeExtended.STRING))
+            .decorateField("a_float", factory.value(ValueTypeExtended.STRING))
+            .decorateField("a_string", factory.value(ValueTypeExtended.ARRAY))
+            .decorateField("an_array", factory.value(ValueTypeExtended.STRING))
+            .decorateField("an_object", factory.value(ValueTypeExtended.ARRAY))
+            .build();
 
-        Assertions.assertEquals("true", decoratedJsonValue.asJsonObject().getString("a_bool"));
+        JsonValue decoratedJsonValue = decorator.decorate(json);
+
+            Assertions.assertEquals("true", decoratedJsonValue.asJsonObject().getString("a_bool"));
         Assertions.assertEquals("10", decoratedJsonValue.asJsonObject().getString("a_int"));
         Assertions.assertEquals("3.14", decoratedJsonValue.asJsonObject().getString("a_float"));
         Assertions.assertEquals("Hello", decoratedJsonValue.asJsonObject().getJsonArray("a_string").getString(0));
         Assertions.assertEquals("[1,2,3,4]", decoratedJsonValue.asJsonObject().getString("an_array"));
 
-        Assertions.assertEquals(false, decoratedJsonValue.asJsonObject().getJsonArray("an_object")
+        Assertions.assertFalse(decoratedJsonValue.asJsonObject().getJsonArray("an_object")
                 .getJsonObject(0).getBoolean("nested_bool"));
         Assertions.assertEquals(20, decoratedJsonValue.asJsonObject().getJsonArray("an_object")
                 .getJsonObject(0).getInt("nested_int"));
@@ -546,21 +564,26 @@ class DecoratedJsonValueTest {
     }
 
     @Test
-    public void objectFilterAndCasts() throws IOException {
+    void objectFilterAndCasts() throws IOException {
         JsonValue json = TestUtil.loadJson("/json/geologistsUnconsistentAddresses.json");
 
-        JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder('.');
-        JsonValue decoratedJsonValue = builder
-                .cast(".content_length", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-                .filterByType(".content.*.addresses", JsonDecoratorBuilder.ValueTypeExtended.OBJECT)
-                .build(json);
+        JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
+        JsonDecorator decorator = factory.object()
+            .decorateField("content_length", factory.value(ValueTypeExtended.STRING))
+            .decorateField("content",
+                factory.array().decorator(ValueTypeExtended.OBJECT,
+                    factory.object().decorateField("addresses",
+                        factory.array().filter(ValueTypeExtended.OBJECT)).build()))
+            .build();
 
-        JsonObject jsonObject = decoratedJsonValue.asJsonObject();
+        JsonValue decoratedJsonValue = decorator.decorate(json);
+
+            JsonObject jsonObject = decoratedJsonValue.asJsonObject();
         JsonValue contentLength = jsonObject.get("content_length");
         Assertions.assertEquals(JsonValue.ValueType.STRING, contentLength.getValueType());
 
         JsonArray content = jsonObject.getJsonArray("content");
-        content.stream().forEach(e -> Assertions.assertEquals(3, e.asJsonObject().getJsonArray("addresses").size()));
+        content.forEach(e -> Assertions.assertEquals(3, e.asJsonObject().getJsonArray("addresses").size()));
 
     }
 
@@ -569,7 +592,7 @@ class DecoratedJsonValueTest {
 
         if (OUTPUT_JSON_DIFF) {
             // Display the diff
-            diff.toJsonArray().stream().forEach(d -> System.out.println(String.format("%s=%s", d.asJsonObject().getString("path"), d.toString())));
+            diff.toJsonArray().forEach(d -> System.out.println(String.format("%s=%s", d.asJsonObject().getString("path"), d.toString())));
         }
 
         Map<String, JsonValue> diffMap = diff.toJsonArray().stream().collect(Collectors.toMap(j -> j.asJsonObject().getString("path").toString(), j -> j));
@@ -577,23 +600,28 @@ class DecoratedJsonValueTest {
 
         Assertions.assertAll("Diff",
             prop.entrySet().stream()
-                .map(e -> { return () -> Assertions.assertEquals(e.getValue(), diffMap.get(e.getKey()).toString()); }
+                .map(e -> {
+                    JsonValue value = Json.createParser(new StringReader(e.getValue().toString())).getValue();
+                    return () -> Assertions.assertEquals(value, diffMap.get(e.getKey()));
+                }
         ));
 
-        prop.forEach((k, v) -> Assertions.assertEquals(v, diffMap.get(k).toString()));
         Assertions.assertEquals(prop.size(), diff.toJsonArray().size());
     }
 
     @Test
-    public void serializationTest() throws IOException {
+    void serializationTest() throws IOException {
         JsonValue json = TestUtil.loadJson("/json/simple.json");
 
-        JsonDecoratorBuilder builder = JsonDecoratorFactoryImpl.getInstance().createBuilder();
-        JsonObject decoratedJsonValue = builder
-                .cast("/address1", JsonDecoratorBuilder.ValueTypeExtended.OBJECT, "{\"city\": \"Nantes\"}")
-                .cast("/age", JsonDecoratorBuilder.ValueTypeExtended.STRING)
-                .cast("/address2", JsonDecoratorBuilder.ValueTypeExtended.ARRAY)
-                .build(json).asJsonObject();
+        JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
+
+        JsonDecorator decorator = factory.object()
+            .decorateField("address1", factory.value(ValueTypeExtended.OBJECT)
+                .defaultValue(Json.createObjectBuilder().add("city", "Nantes").build()))
+            .decorateField("age", factory.value(ValueTypeExtended.STRING))
+            .decorateField("address2", factory.value(ValueTypeExtended.ARRAY))
+            .build();
+        JsonObject decoratedJsonValue = decorator.decorate(json).asJsonObject();
 
         String serialized = jsonObjectToString(decoratedJsonValue);
 
@@ -601,8 +629,41 @@ class DecoratedJsonValueTest {
         JsonValue newJsonValue = reader.readValue();
 
         compareWithJsonDiff(json.asJsonObject(), newJsonValue.asJsonObject(), "/diff/afterSerialization.properties");
+    }
 
+    @Test
+    void customDecorator() {
+        JsonValue json = TestUtil.loadJson("/json/simple.json");
+        JsonDecorator decorator = new MyCustomDecorator();
 
+        JsonValue decorated = decorator.decorate(json);
+        Assertions.assertEquals(JsonValue.ValueType.ARRAY, decorated.getValueType());
+        Assertions.assertEquals(decorated.asJsonArray().get(0).asJsonObject().get("name"),
+            Json.createValue("Peter"));
+        Assertions.assertEquals(decorated.asJsonArray().get(1).asJsonObject().get("age"),
+            Json.createValue(32));
+        Assertions.assertEquals(decorated.asJsonArray().get(2).asJsonObject().get("address1"),
+            JsonValue.NULL);
+        Assertions.assertEquals(decorated.asJsonArray().get(3).asJsonObject().get("address2").getValueType(),
+            JsonValue.ValueType.OBJECT);
+    }
+
+    static class MyCustomDecorator implements JsonDecorator {
+
+        @Override
+        public JsonValue decorate(final JsonValue rawValue) {
+            if (rawValue == null || rawValue.getValueType() != JsonValue.ValueType.OBJECT) {
+                return rawValue;
+            }
+            JsonArrayBuilder builder = Json.createArrayBuilder();
+            rawValue.asJsonObject().entrySet().forEach(
+                e -> {
+                    JsonObject item = Json.createObjectBuilder().add(e.getKey(), e.getValue()).build();
+                    builder.add(item);
+                }
+            );
+            return builder.build();
+        }
     }
 
     private String jsonObjectToString(JsonObject decoratedJsonValue) {

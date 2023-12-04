@@ -1,13 +1,12 @@
 package org.talend.components.jsondecorator.api.cast;
 
 import org.talend.components.jsondecorator.api.Cast;
-import org.talend.components.jsondecorator.api.JsonDecoratorBuilder;
 
-import javax.json.JsonNumber;
 import javax.json.JsonValue;
+import org.talend.components.jsondecorator.api.ValueTypeExtended;
+
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 public class CastFactory {
 
@@ -36,39 +35,7 @@ public class CastFactory {
         castByType.put(JsonValue.ValueType.ARRAY, new CastArray());
     }
 
-    public JsonValue cast(JsonValue v, JsonDecoratorBuilder.JsonDecoratorConfiguration castAttribute) throws JsonDecoratorCastException {
-        JsonValue.ValueType valueType = v.getValueType();
-        Cast cast = this.find(valueType);
-
-        JsonValue casted = null;
-        JsonDecoratorBuilder.ValueTypeExtended castType = castAttribute.getType();
-        switch (castType) {
-            case ARRAY:
-                casted = cast.toArray(v);
-                break;
-            case BOOLEAN:
-                casted = cast.toBoolean(v);
-                break;
-            case FLOAT:
-                casted = cast.toFloat(v);
-                break;
-            case INT:
-                casted = cast.toInt(v);
-                break;
-            case OBJECT:
-                casted = cast.toObject(v);
-                break;
-            case STRING:
-                casted = cast.toString(v);
-                break;
-            default:
-                throw new JsonDecoratorCastException(String.format("Not supported type to cast %s.", castType));
-        }
-
-        return casted;
-    }
-
-    public JsonValue cast(JsonValue v, JsonDecoratorBuilder.ValueTypeExtended targetType) throws JsonDecoratorCastException {
+    public JsonValue cast(JsonValue v, ValueTypeExtended targetType) throws JsonDecoratorCastException {
         JsonValue.ValueType valueType = v.getValueType();
         Cast cast = this.find(valueType);
 

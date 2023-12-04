@@ -2,26 +2,26 @@ package org.talend.components.jsondecorator.impl;
 
 import javax.json.JsonValue;
 import org.talend.components.jsondecorator.api.JsonDecorator;
-import org.talend.components.jsondecorator.api.JsonDecoratorBuilder;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.function.Predicate;
 
 public class ArrayFilters {
 
-  public static class ArrayFilter {
-    private final JsonDecoratorBuilder.ValueTypeExtended filter;
+  public static class ArrayItemDecorator {
+    private final Predicate<JsonValue> filter;
 
     private final JsonDecorator decorator;
 
-    public ArrayFilter(final JsonDecoratorBuilder.ValueTypeExtended filter,
+    public ArrayItemDecorator(final Predicate<JsonValue> filter,
         final JsonDecorator decorator) {
       this.filter = filter;
       this.decorator = decorator;
     }
 
     public boolean isConcerned(JsonValue value) {
-      return this.filter == null || this.filter.accept(value);
+      return this.filter == null || this.filter.test(value);
     }
 
     public JsonValue apply(JsonValue value) {
@@ -32,9 +32,9 @@ public class ArrayFilters {
     }
   }
 
-  private final ArrayList<ArrayFilter> filters = new ArrayList<>();
+  private final ArrayList<ArrayItemDecorator> filters = new ArrayList<>();
 
-  public ArrayFilters(final Iterable<ArrayFilter> filters) {
+  public ArrayFilters(final Iterable<ArrayItemDecorator> filters) {
     filters.forEach(this.filters::add);
   }
 
@@ -43,17 +43,21 @@ public class ArrayFilters {
   }
 
   public JsonValue apply(JsonValue value) {
-    final ArrayFilter filter = findFilter(value);
+    final ArrayItemDecorator filter = findFilter(value);
     if (filter == null) {
       return value;
     }
     return filter.apply(value);
   }
 
-  private ArrayFilter findFilter(JsonValue value) {
-    final Iterator<ArrayFilter> iterator = this.filters.iterator();
+  ArrayList<ArrayItemDecorator> getFilters() {
+    return filters;
+  }
+
+  private ArrayItemDecorator findFilter(JsonValue value) {
+    final Iterator<ArrayItemDecorator> iterator = this.filters.iterator();
     while (iterator.hasNext()) {
-      ArrayFilter filter = iterator.next();
+      ArrayItemDecorator filter = iterator.next();
       if (filter.isConcerned(value)) {
         return filter;
       }

@@ -34,4 +34,8 @@ public class JsonArrayDecorator implements JsonDecorator {
         .forEach(builder::add);
     return builder.build();
   }
+
+  ArrayFilters getFilters() {
+    return filters;
+  }
 }

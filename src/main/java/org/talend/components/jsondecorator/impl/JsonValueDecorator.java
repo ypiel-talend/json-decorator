@@ -2,7 +2,7 @@ package org.talend.components.jsondecorator.impl;
 
 import javax.json.JsonValue;
 import org.talend.components.jsondecorator.api.JsonDecorator;
-import org.talend.components.jsondecorator.api.JsonDecoratorBuilder;
+import org.talend.components.jsondecorator.api.ValueTypeExtended;
 import org.talend.components.jsondecorator.api.cast.CastFactory;
 import org.talend.components.jsondecorator.api.cast.JsonDecoratorCastException;
 
@@ -13,12 +13,12 @@ public class JsonValueDecorator implements JsonDecorator {
 
   private final Collection<JsonValue.ValueType> acceptedSourceTypes = new ArrayList<>();
 
-  private final JsonDecoratorBuilder.ValueTypeExtended targetType;
+  private final ValueTypeExtended targetType;
 
   private final JsonValue defaultValue;
 
   public JsonValueDecorator(final Collection<JsonValue.ValueType> acceptedSourceTypes,
-      final JsonDecoratorBuilder.ValueTypeExtended targetType, final JsonValue defaultValue) {
+      final ValueTypeExtended targetType, final JsonValue defaultValue) {
     this.acceptedSourceTypes.addAll(acceptedSourceTypes);
     this.targetType = targetType;
     this.defaultValue = defaultValue;
