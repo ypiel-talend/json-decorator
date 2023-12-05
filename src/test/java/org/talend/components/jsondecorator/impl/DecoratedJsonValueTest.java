@@ -648,6 +648,26 @@ class DecoratedJsonValueTest {
             .asJsonObject().get("nested_object").asJsonObject();
         Assertions.assertEquals("23", nestedObject.getString("field1"));
         Assertions.assertEquals("true", nestedObject.getString("field2"));
+
+        JsonDecorator custom = (JsonValue rawValue) -> {
+            if (rawValue == null || rawValue.getValueType() != JsonValue.ValueType.STRING) {
+                return rawValue;
+            }
+            return Json.createValue(((JsonString) rawValue).getString() + "_");
+        };
+        JsonDecorator decoratorCustom = factory.object()
+            .decorateField(FieldPath.from("an_object/nested_object/field1"), factory.value(ValueTypeExtended.STRING))
+            .decorateField(FieldPath.from("an_object/nested_object/field1"), custom)
+            .decorateField(FieldPath.from("an_object/nested_object"), decoratorNestedf2)
+            .decorateField(FieldPath.from("an_object/nested_object/field2"), custom)
+            .build();
+        JsonValue decoratedCustom = decoratorCustom.decorate(json);
+        JsonObject nestedCustomObject = decoratedCustom.asJsonObject().get("an_object")
+            .asJsonObject().get("nested_object").asJsonObject();
+        Assertions.assertAll("custom",
+            () -> Assertions.assertEquals("23_", nestedCustomObject.getString("field1")),
+            () -> Assertions.assertEquals("true_", nestedCustomObject.getString("field2"))
+        );
     }
 
     @Test

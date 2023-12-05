@@ -77,23 +77,30 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
     }
 
     public JsonDecorator toDecorator() {
-      return this.decorator != null ? decorator : (this.decoratorBuilder != null ? this.decoratorBuilder.build() : null);
+      return this.decorator != null
+          ? decorator
+          : (this.decoratorBuilder != null ? this.decoratorBuilder.build() : null);
     }
 
     DecoratorSupplier mixWith(DecoratorSupplier other) {
-      if (other == null || !other.isObject() || !this.isObject()) {
+      if (other == null) {
         return this;
       }
-      ObjectBuilderImpl otherBuilder = other.toBuilder();
-      if (otherBuilder == null) {
-        return this;
+      if (other.isObject() && this.isObject()) {
+        ObjectBuilderImpl otherBuilder = other.toBuilder();
+        if (otherBuilder != null) {
+          ObjectBuilderImpl builder = this.toBuilder();
+          if (builder != null) {
+            builder.addDecorators(otherBuilder);
+            return new DecoratorSupplier(builder);
+          }
+        }
       }
-      ObjectBuilderImpl builder = this.toBuilder();
-      if (builder == null) {
-        return this;
-      }
-      builder.addDecorators(otherBuilder);
-      return new DecoratorSupplier(builder);
+
+      ChainedDecorator chainedDecorator = new ChainedDecorator(this.decorator,
+          this.decoratorBuilder,
+          other.decorator, other.decoratorBuilder);
+      return new DecoratorSupplier(chainedDecorator);
     }
 
     private boolean isObject() {
@@ -108,7 +115,7 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
       if (this.decorator instanceof JsonObjectDecorator) {
         ObjectBuilderImpl builder = new ObjectBuilderImpl();
         JsonObjectDecorator dec = (JsonObjectDecorator) this.decorator;
-        for (Map.Entry<String, JsonDecorator> fieldDec: dec.getFieldsDecorators()) {
+        for (Map.Entry<String, JsonDecorator> fieldDec : dec.getFieldsDecorators()) {
           builder.decorateField(fieldDec.getKey(), fieldDec.getValue());
         }
         return builder;
@@ -159,7 +166,6 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
   }
 
 
-
   static class ObjectBuilderImpl implements JsonDecorator.ObjectDecoratorBuilder {
 
     private final Map<String, DecoratorSupplier> fieldsDecorator = new HashMap<>();
@@ -204,7 +210,7 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
     }
 
     private void decorateFields(Iterator<String> elements,
-              final DecoratorSupplier decorator) {
+        final DecoratorSupplier decorator) {
       ObjectBuilderImpl current = this;
       while (elements.hasNext()) {
         String next = elements.next();
@@ -215,21 +221,18 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
             JsonDecorator.DecoratorBuilder builder = nextDecorator.toBuilder();
             current.decorateField(next, builder);
             current = (ObjectBuilderImpl) builder;
-          }
-          else {
+          } else {
             ObjectBuilderImpl nextBuilder = new ObjectBuilderImpl();
             nextDecorator = new DecoratorSupplier(nextBuilder);
             current.fieldsDecorator.put(next, nextDecorator);
             current = nextBuilder;
           }
-        }
-        else {
+        } else {
           DecoratorSupplier supplier = current.fieldsDecorator.get(next);
           if (supplier == null) {
             current.fieldsDecorator.put(next, decorator);
-          }
-          else {
-            DecoratorSupplier mixed = decorator.mixWith(supplier);
+          } else {
+            DecoratorSupplier mixed = supplier.mixWith(decorator);
             current.fieldsDecorator.put(next, mixed);
           }
         }

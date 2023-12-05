@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 
+@FunctionalInterface
 public interface JsonDecorator {
 
   JsonValue decorate(JsonValue rawValue);
