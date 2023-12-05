@@ -45,6 +45,22 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
     return new ChainedDecorator(d1, d2);
   }
 
+  @Override
+  public JsonDecorator chain(final JsonDecorator d1, final JsonDecorator.DecoratorBuilder d2) {
+    return new ChainedDecorator(d1, d2);
+  }
+
+  @Override
+  public JsonDecorator chain(final JsonDecorator.DecoratorBuilder d1, final JsonDecorator d2) {
+    return new ChainedDecorator(d1, d2);
+  }
+
+  @Override
+  public JsonDecorator chain(final JsonDecorator.DecoratorBuilder d1,
+      final JsonDecorator.DecoratorBuilder d2) {
+    return new ChainedDecorator(d1, d2);
+  }
+
   private static class DecoratorSupplier {
     private final JsonDecorator decorator;
 
@@ -64,9 +80,30 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
       return this.decorator != null ? decorator : (this.decoratorBuilder != null ? this.decoratorBuilder.build() : null);
     }
 
-    JsonDecorator.DecoratorBuilder toBuilder() {
-      if (this.decoratorBuilder != null) {
-        return this.decoratorBuilder;
+    DecoratorSupplier mixWith(DecoratorSupplier other) {
+      if (other == null || !other.isObject() || !this.isObject()) {
+        return this;
+      }
+      ObjectBuilderImpl otherBuilder = other.toBuilder();
+      if (otherBuilder == null) {
+        return this;
+      }
+      ObjectBuilderImpl builder = this.toBuilder();
+      if (builder == null) {
+        return this;
+      }
+      builder.addDecorators(otherBuilder);
+      return new DecoratorSupplier(builder);
+    }
+
+    private boolean isObject() {
+      return this.decorator instanceof JsonObjectDecorator ||
+          this.decoratorBuilder instanceof JsonDecorator.ObjectDecoratorBuilder;
+    }
+
+    ObjectBuilderImpl toBuilder() {
+      if (this.decoratorBuilder instanceof ObjectBuilderImpl) {
+        return (ObjectBuilderImpl) this.decoratorBuilder;
       }
       if (this.decorator instanceof JsonObjectDecorator) {
         ObjectBuilderImpl builder = new ObjectBuilderImpl();
@@ -76,10 +113,10 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
         }
         return builder;
       }
-      if (this.decorator instanceof JsonArrayDecorator) {
+      /*if (this.decorator instanceof JsonArrayDecorator) {
         ArrayFilters filters = ((JsonArrayDecorator) this.decorator).getFilters();
         return new ArrayBuilderImpl(filters.getFilters());
-      }
+      }*/
       return null;
     }
   }
@@ -97,7 +134,7 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
 
     @Override
     public JsonDecorator.ArrayDecoratorBuilder filter(final Predicate<JsonValue> filter) {
-      this.filters.add(new ArrayFilters.ArrayItemDecorator(filter, null));
+      this.filters.add(new ArrayFilters.ArrayItemDecorator(filter));
       return this;
     }
 
@@ -105,6 +142,13 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
     public JsonDecorator.ArrayDecoratorBuilder decorator(final Predicate<JsonValue> filter,
         final JsonDecorator decorator) {
       this.filters.add(new ArrayFilters.ArrayItemDecorator(filter, decorator));
+      return this;
+    }
+
+    @Override
+    public JsonDecorator.ArrayDecoratorBuilder decorator(final Predicate<JsonValue> filter,
+        final JsonDecorator.DecoratorBuilder decoratorBuilder) {
+      this.filters.add(new ArrayFilters.ArrayItemDecorator(filter, decoratorBuilder));
       return this;
     }
 
@@ -155,6 +199,10 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
       return this;
     }
 
+    void addDecorators(ObjectBuilderImpl addedFields) {
+      this.fieldsDecorator.putAll(addedFields.fieldsDecorator);
+    }
+
     private void decorateFields(Iterator<String> elements,
               final DecoratorSupplier decorator) {
       ObjectBuilderImpl current = this;
@@ -176,9 +224,15 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
           }
         }
         else {
-          current.fieldsDecorator.put(next, decorator);
+          DecoratorSupplier supplier = current.fieldsDecorator.get(next);
+          if (supplier == null) {
+            current.fieldsDecorator.put(next, decorator);
+          }
+          else {
+            DecoratorSupplier mixed = decorator.mixWith(supplier);
+            current.fieldsDecorator.put(next, mixed);
+          }
         }
-
       }
     }
   }
@@ -217,16 +271,50 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
   static class ChainedDecorator implements JsonDecorator {
     private final JsonDecorator d1;
 
+    private final JsonDecorator.DecoratorBuilder d1Builder;
+
     private final JsonDecorator d2;
 
-    public ChainedDecorator(final JsonDecorator d1, final JsonDecorator d2) {
+    private final JsonDecorator.DecoratorBuilder d2Builder;
+
+    private ChainedDecorator(final JsonDecorator d1, final DecoratorBuilder d1Builder, final JsonDecorator d2,
+        final DecoratorBuilder d2Builder) {
       this.d1 = d1;
+      this.d1Builder = d1Builder;
       this.d2 = d2;
+      this.d2Builder = d2Builder;
+    }
+
+    public ChainedDecorator(final JsonDecorator d1, final JsonDecorator d2) {
+      this(d1, null, d2, null);
+    }
+
+    public ChainedDecorator(final JsonDecorator.DecoratorBuilder d1, final JsonDecorator d2) {
+      this(null, d1, d2, null);
+    }
+
+    public ChainedDecorator(final JsonDecorator d1, final JsonDecorator.DecoratorBuilder d2) {
+      this(d1, null, null, d2);
+    }
+
+    public ChainedDecorator(final JsonDecorator.DecoratorBuilder d1, final JsonDecorator.DecoratorBuilder d2) {
+      this(null, d1, null, d2);
     }
 
     @Override
     public JsonValue decorate(final JsonValue rawValue) {
-      return d2.decorate(d1.decorate(rawValue));
+      final JsonValue decoratedD1 = decorate(rawValue, d1, d1Builder);
+      return decorate(decoratedD1, d2, d2Builder);
+    }
+
+    private JsonValue decorate(final JsonValue rawValue, JsonDecorator dec, final DecoratorBuilder decBuilder) {
+      if (dec != null) {
+        return dec.decorate(rawValue);
+      }
+      if (decBuilder != null) {
+        return decBuilder.build().decorate(rawValue);
+      }
+      return rawValue;
     }
   }
 }

@@ -1,0 +1,15 @@
+{
+  "an_object": {
+    "nested_object": {
+      "field1": 23,
+      "field2": true
+    },
+    "nested_bool": false,
+    "nested_int": 20,
+    "nested_float": 7.14,
+    "nested_string": "Bye",
+    "nested_array": [
+      5, 6, 7, 8
+    ]
+  }
+}

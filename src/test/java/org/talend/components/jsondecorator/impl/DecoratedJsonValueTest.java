@@ -84,7 +84,7 @@ class DecoratedJsonValueTest {
             .decorateField("content_length", factory.value(ValueTypeExtended.FLOAT))
             .decorateField("content",
                 factory.array().decorator(ValueTypeExtended.OBJECT,
-                    contentDecorator).build())
+                    contentDecorator))
             .build();
 
         JsonValue decoratedJsonValue = decorator.decorate(json);
@@ -332,13 +332,13 @@ class DecoratedJsonValueTest {
 
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
         JsonDecorator arrayStringItemDecorator = factory.array()
-            .decorator(null, factory.value(ValueTypeExtended.STRING).build())
+            .cast(factory.value(ValueTypeExtended.STRING))
             .build();
         JsonDecorator decorator = factory.object()
             .decorateField("first_array", arrayStringItemDecorator)
             .decorateField("second_array", arrayStringItemDecorator)
             .decorateField("third_array",
-                factory.array().decorator(ValueTypeExtended.ARRAY, arrayStringItemDecorator).build())
+                factory.array().decorator(ValueTypeExtended.ARRAY, arrayStringItemDecorator))
             .build();
         JsonValue decoratedJsonValue = decorator.decorate(json);
 
@@ -386,7 +386,7 @@ class DecoratedJsonValueTest {
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
         JsonDecorator decorator = factory.object().decorateField("second_array",
                 factory.array().decorator(ValueTypeExtended.ARRAY,
-                        factory.array().filter(type).build()).build())
+                        factory.array().filter(type)))
             .build();
 
         JsonValue decoratedJsonValue = decorator.decorate(json);
@@ -417,17 +417,16 @@ class DecoratedJsonValueTest {
         decoratorBuilder.decorateField("content_length", factory.value(ValueTypeExtended.STRING).build());
 
         JsonDecorator arrayDecorator = factory.array().decorator(ValueTypeExtended.OBJECT,
-            factory.object().decorateField("objects",
-                    factory.array().decorator(null,
+            factory.object()
+                .decorateField("objects",
+                    factory.array().cast(
                         factory.object()
-                            .decorateField("aaa", factory.value(ValueTypeExtended.STRING).build())
-                            .build()
-                    ).build())
+                            .decorateField("aaa", factory.value(ValueTypeExtended.STRING))
+                    )
+                )
                 .decorateField("bag",
                     factory.array()
-                        .decorator(null, factory.value(ValueTypeExtended.STRING).build())
-                        .build())
-                .build()
+                        .decorator(null, factory.value(ValueTypeExtended.STRING)))
         ).build();
 
         decoratorBuilder.decorateField("content", arrayDecorator);
@@ -460,7 +459,7 @@ class DecoratedJsonValueTest {
             factory.value(ValueTypeExtended.ARRAY).build());
 
         JsonDecorator ageDecorator = factory.array().decorator(ValueTypeExtended.OBJECT,
-                factory.object().decorateField("age", chain).build())
+                factory.object().decorateField("age", chain))
             .build();
         JsonDecorator decorator = factory.object().decorateField("content", ageDecorator).build();
         JsonValue decoratedJsonValue = decorator.decorate(json);
@@ -474,7 +473,6 @@ class DecoratedJsonValueTest {
             JsonValue jsonValue = ((JsonArray) age).get(0);
             Assertions.assertEquals(JsonValue.ValueType.STRING, jsonValue.getValueType());
             Assertions.assertEquals(expecteds[i], ((JsonString) jsonValue).getString());
-
         }
     }
 
@@ -489,7 +487,7 @@ class DecoratedJsonValueTest {
             factory.chain(factory.value(ValueTypeExtended.ARRAY).build(),
                 factory.array().decorator(ValueTypeExtended.OBJECT,
                     factory.object().decorateField("default",
-                        factory.value(ValueTypeExtended.STRING)).build()).build()
+                        factory.value(ValueTypeExtended.STRING)))
             )).build();
         JsonDecorator decorator = factory.object().decorateField("data", factory.array().cast(typesDecorator)).build();
 
@@ -573,12 +571,12 @@ class DecoratedJsonValueTest {
             .decorateField("content",
                 factory.array().decorator(ValueTypeExtended.OBJECT,
                     factory.object().decorateField("addresses",
-                        factory.array().filter(ValueTypeExtended.OBJECT)).build()))
+                        factory.array().filter(ValueTypeExtended.OBJECT))))
             .build();
 
         JsonValue decoratedJsonValue = decorator.decorate(json);
 
-            JsonObject jsonObject = decoratedJsonValue.asJsonObject();
+        JsonObject jsonObject = decoratedJsonValue.asJsonObject();
         JsonValue contentLength = jsonObject.get("content_length");
         Assertions.assertEquals(JsonValue.ValueType.STRING, contentLength.getValueType());
 
@@ -629,6 +627,27 @@ class DecoratedJsonValueTest {
         JsonValue newJsonValue = reader.readValue();
 
         compareWithJsonDiff(json.asJsonObject(), newJsonValue.asJsonObject(), "/diff/afterSerialization.properties");
+    }
+
+    @Test
+    void innerObject() {
+        JsonValue json = TestUtil.loadJson("/json/Objects.json");
+
+        JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
+        JsonDecorator decoratorNestedf1 = factory.object().decorateField("field1", factory.value(ValueTypeExtended.STRING))
+            .build();
+        JsonDecorator decoratorNestedf2 = factory.object().decorateField("field2", factory.value(ValueTypeExtended.STRING))
+            .build();
+        JsonDecorator decorator = factory.object()
+            .decorateField(FieldPath.from("an_object/nested_object"), decoratorNestedf1)
+            .decorateField(FieldPath.from("an_object/nested_object"), decoratorNestedf2)
+            .build();
+        JsonValue decorated = decorator.decorate(json);
+
+        JsonObject nestedObject = decorated.asJsonObject().get("an_object")
+            .asJsonObject().get("nested_object").asJsonObject();
+        Assertions.assertEquals("23", nestedObject.getString("field1"));
+        Assertions.assertEquals("true", nestedObject.getString("field2"));
     }
 
     @Test

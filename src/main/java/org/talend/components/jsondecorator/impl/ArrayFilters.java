@@ -14,10 +14,27 @@ public class ArrayFilters {
 
     private final JsonDecorator decorator;
 
-    public ArrayItemDecorator(final Predicate<JsonValue> filter,
-        final JsonDecorator decorator) {
+    private final JsonDecorator.DecoratorBuilder decoratorBuilder;
+
+    private ArrayItemDecorator(final Predicate<JsonValue> filter, final JsonDecorator decorator,
+        final JsonDecorator.DecoratorBuilder decoratorBuilder) {
       this.filter = filter;
       this.decorator = decorator;
+      this.decoratorBuilder = decoratorBuilder;
+    }
+
+    public ArrayItemDecorator(final Predicate<JsonValue> filter,
+        final JsonDecorator decorator) {
+      this(filter, decorator, null);
+    }
+
+    public ArrayItemDecorator(final Predicate<JsonValue> filter,
+        final JsonDecorator.DecoratorBuilder decoratorBuilder) {
+      this(filter, null, decoratorBuilder);
+    }
+
+    public ArrayItemDecorator(final Predicate<JsonValue> filter) {
+      this(filter, null, null);
     }
 
     public boolean isConcerned(JsonValue value) {
@@ -25,10 +42,13 @@ public class ArrayFilters {
     }
 
     public JsonValue apply(JsonValue value) {
-      if (this.decorator == null) {
+      if (this.decorator == null && this.decoratorBuilder == null) {
         return value;
       }
-      return this.decorator.decorate(value);
+      if (decorator != null) {
+        return this.decorator.decorate(value);
+      }
+      return this.decoratorBuilder.build().decorate(value);
     }
   }
 

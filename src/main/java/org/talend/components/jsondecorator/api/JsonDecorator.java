@@ -29,7 +29,13 @@ public interface JsonDecorator {
       return this.decorator((t) -> true, decorator);
     }
 
+    default ArrayDecoratorBuilder cast(JsonDecorator.DecoratorBuilder decoratorBuilder) {
+      return this.decorator((t) -> true, decoratorBuilder);
+    }
+
     ArrayDecoratorBuilder decorator(Predicate<JsonValue> filter, JsonDecorator decorator);
+
+    ArrayDecoratorBuilder decorator(Predicate<JsonValue> filter, JsonDecorator.DecoratorBuilder decoratorBuilder);
   }
 
   class FieldPath {
@@ -95,6 +101,12 @@ public interface JsonDecorator {
     JsonDecorator ident = new JsonDecorator.IdentDecorator();
 
     JsonDecorator chain(JsonDecorator d1, JsonDecorator d2);
+
+    JsonDecorator chain(JsonDecorator d1, JsonDecorator.DecoratorBuilder d2);
+
+    JsonDecorator chain(JsonDecorator.DecoratorBuilder d1, JsonDecorator d2);
+
+    JsonDecorator chain(JsonDecorator.DecoratorBuilder d1, JsonDecorator.DecoratorBuilder d2);
 
     ArrayDecoratorBuilder array();
 
