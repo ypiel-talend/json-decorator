@@ -2,7 +2,8 @@
   "an_object": {
     "nested_object": {
       "field1": 23,
-      "field2": true
+      "field2": true,
+      "array1": [true, false, 1,2,3, "Hello"]
     },
     "nested_bool": false,
     "nested_int": 20,

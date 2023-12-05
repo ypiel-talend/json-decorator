@@ -188,7 +188,7 @@ class DecoratedJsonValueTest {
 
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
         JsonDecorator bagDecorator = factory.object().decorateField("bag",
-            factory.array().filter(valueTypeExtended).build()).build();
+            factory.array().filter(valueTypeExtended)).build();
         JsonDecorator decorator = factory.object().decorateField("content",
                 factory.array().decorator(ValueTypeExtended.OBJECT,
                         bagDecorator)
@@ -634,6 +634,7 @@ class DecoratedJsonValueTest {
         JsonValue json = TestUtil.loadJson("/json/Objects.json");
 
         JsonDecorator.BuilderFactory factory = BuilderFactoryImpl.getInstance();
+
         JsonDecorator decoratorNestedf1 = factory.object().decorateField("field1", factory.value(ValueTypeExtended.STRING))
             .build();
         JsonDecorator decoratorNestedf2 = factory.object().decorateField("field2", factory.value(ValueTypeExtended.STRING))
@@ -641,6 +642,7 @@ class DecoratedJsonValueTest {
         JsonDecorator decorator = factory.object()
             .decorateField(FieldPath.from("an_object/nested_object"), decoratorNestedf1)
             .decorateField(FieldPath.from("an_object/nested_object"), decoratorNestedf2)
+            .decorateField(FieldPath.from("an_object/nested_object/array1"), factory.array().filter(ValueTypeExtended.INT))
             .build();
         JsonValue decorated = decorator.decorate(json);
 
@@ -648,6 +650,8 @@ class DecoratedJsonValueTest {
             .asJsonObject().get("nested_object").asJsonObject();
         Assertions.assertEquals("23", nestedObject.getString("field1"));
         Assertions.assertEquals("true", nestedObject.getString("field2"));
+        JsonArray array1 = nestedObject.getJsonArray("array1");
+        Assertions.assertEquals(3, array1.size());
 
         JsonDecorator custom = (JsonValue rawValue) -> {
             if (rawValue == null || rawValue.getValueType() != JsonValue.ValueType.STRING) {
@@ -656,7 +660,7 @@ class DecoratedJsonValueTest {
             return Json.createValue(((JsonString) rawValue).getString() + "_");
         };
         JsonDecorator decoratorCustom = factory.object()
-            .decorateField(FieldPath.from("an_object/nested_object/field1"), factory.value(ValueTypeExtended.STRING))
+            .decorateField(FieldPath.from(".an_object.nested_object.field1", '.'), factory.value(ValueTypeExtended.STRING))
             .decorateField(FieldPath.from("an_object/nested_object/field1"), custom)
             .decorateField(FieldPath.from("an_object/nested_object"), decoratorNestedf2)
             .decorateField(FieldPath.from("an_object/nested_object/field2"), custom)
