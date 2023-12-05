@@ -1,13 +1,13 @@
 package org.talend.components.jsondecorator.api.cast;
 
-import org.talend.components.jsondecorator.api.Cast;
-
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonString;
 import javax.json.JsonValue;
+import org.talend.components.jsondecorator.api.Cast;
+
 import java.math.BigInteger;
 
 public class CastNumber implements Cast<JsonNumber> {
@@ -40,7 +40,6 @@ public class CastNumber implements Cast<JsonNumber> {
 
     @Override
     public JsonNumber toInt(JsonNumber value) throws JsonDecoratorCastException {
-        String string = value.toString();
         return value;
     }
 

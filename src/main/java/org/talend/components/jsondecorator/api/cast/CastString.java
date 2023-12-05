@@ -1,20 +1,16 @@
 package org.talend.components.jsondecorator.api.cast;
 
-import org.talend.components.jsondecorator.api.Cast;
-
 import javax.json.Json;
 import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonString;
 import javax.json.JsonValue;
 import javax.json.stream.JsonParsingException;
+import org.talend.components.jsondecorator.api.Cast;
+
 import java.io.StringReader;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 public class CastString implements Cast<JsonString> {
     @Override

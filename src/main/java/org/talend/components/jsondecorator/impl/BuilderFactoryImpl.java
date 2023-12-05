@@ -120,10 +120,6 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
         }
         return builder;
       }
-      /*if (this.decorator instanceof JsonArrayDecorator) {
-        ArrayFilters filters = ((JsonArrayDecorator) this.decorator).getFilters();
-        return new ArrayBuilderImpl(filters.getFilters());
-      }*/
       return null;
     }
   }

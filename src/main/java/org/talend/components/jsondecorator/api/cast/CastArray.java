@@ -1,7 +1,5 @@
 package org.talend.components.jsondecorator.api.cast;
 
-import org.talend.components.jsondecorator.api.Cast;
-
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
@@ -9,8 +7,7 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
 import javax.json.JsonValue;
-import java.math.BigInteger;
-import java.util.stream.Collectors;
+import org.talend.components.jsondecorator.api.Cast;
 
 public class CastArray implements Cast<JsonArray> {
     @Override

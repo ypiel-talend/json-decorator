@@ -1,15 +1,12 @@
 package org.talend.components.jsondecorator.api.cast;
 
-import org.talend.components.jsondecorator.api.Cast;
-
 import javax.json.Json;
 import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonString;
 import javax.json.JsonValue;
-import java.math.BigInteger;
+import org.talend.components.jsondecorator.api.Cast;
 
 public class CastObject implements Cast<JsonObject> {
     @Override

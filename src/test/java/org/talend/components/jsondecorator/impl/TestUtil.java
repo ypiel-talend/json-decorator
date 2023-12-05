@@ -3,6 +3,7 @@ package org.talend.components.jsondecorator.impl;
 import javax.json.Json;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;

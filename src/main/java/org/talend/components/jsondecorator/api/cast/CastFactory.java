@@ -1,25 +1,22 @@
 package org.talend.components.jsondecorator.api.cast;
 
-import org.talend.components.jsondecorator.api.Cast;
-
 import javax.json.JsonValue;
+import org.talend.components.jsondecorator.api.Cast;
 import org.talend.components.jsondecorator.api.ValueTypeExtended;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
 public class CastFactory {
 
-    private static CastFactory instance;
+    private final static CastFactory instance = new CastFactory();
 
-    private Map<JsonValue.ValueType, Cast> castByType = new HashMap<>();
+    private Map<JsonValue.ValueType, Cast> castByType = new EnumMap<>(JsonValue.ValueType.class);
 
     private final CastIdent ident = new CastIdent();
 
     public static synchronized CastFactory getInstance() {
-        if (instance == null) {
-            instance = new CastFactory();
-        }
         return instance;
     }
 
