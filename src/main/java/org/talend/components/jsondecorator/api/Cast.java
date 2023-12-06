@@ -1,12 +1,11 @@
 package org.talend.components.jsondecorator.api;
 
-import org.talend.components.jsondecorator.api.cast.JsonDecoratorCastException;
-
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonString;
 import javax.json.JsonValue;
+import org.talend.components.jsondecorator.api.cast.JsonDecoratorCastException;
 
 public interface Cast<T extends JsonValue> {
 

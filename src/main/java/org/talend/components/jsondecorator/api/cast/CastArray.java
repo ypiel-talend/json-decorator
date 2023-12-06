@@ -1,7 +1,5 @@
 package org.talend.components.jsondecorator.api.cast;
 
-import org.talend.components.jsondecorator.api.Cast;
-
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
@@ -9,17 +7,16 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
 import javax.json.JsonValue;
-import java.math.BigInteger;
-import java.util.stream.Collectors;
+import org.talend.components.jsondecorator.api.Cast;
 
 public class CastArray implements Cast<JsonArray> {
     @Override
-    public JsonArray toArray(JsonArray value) throws JsonDecoratorCastException {
+    public JsonArray toArray(JsonArray value) {
         return value;
     }
 
     @Override
-    public JsonObject toObject(JsonArray value) throws JsonDecoratorCastException {
+    public JsonObject toObject(JsonArray value) {
         JsonObjectBuilder objectBuilder = Json.createObjectBuilder();
         for(int i=1; i<value.size(); i++){
             objectBuilder.add("field_"+i, value.get(i));
@@ -43,10 +40,9 @@ public class CastArray implements Cast<JsonArray> {
      * Cast to a number containing the size of given array.
      * @param value
      * @return
-     * @throws JsonDecoratorCastException
      */
     @Override
-    public JsonNumber toInt(JsonArray value) throws JsonDecoratorCastException {
+    public JsonNumber toInt(JsonArray value) {
         JsonNumber number = Json.createValue(value.size());
         return number;
     }
@@ -55,10 +51,9 @@ public class CastArray implements Cast<JsonArray> {
      * Cast to TRUE if the array is empty, FALSE if not empty.
      * @param value
      * @return
-     * @throws JsonDecoratorCastException
      */
     @Override
-    public JsonValue toBoolean(JsonArray value) throws JsonDecoratorCastException {
+    public JsonValue toBoolean(JsonArray value) {
         JsonValue bool = value.isEmpty() ? JsonValue.FALSE : JsonValue.TRUE;
         return bool;
     }
