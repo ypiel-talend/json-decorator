@@ -183,7 +183,7 @@ public class BuilderFactoryImpl implements JsonDecorator.BuilderFactory {
     public JsonDecorator build() {
       final Map<String, JsonDecorator> fieldsDecoratorCopy =
           this.fieldsDecorator.entrySet().stream()
-              .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().toDecorator()));
+              .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toDecorator()));
       return new JsonObjectDecorator(fieldsDecoratorCopy);
     }
 

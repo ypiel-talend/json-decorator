@@ -27,11 +27,11 @@ public interface JsonDecorator {
     ArrayDecoratorBuilder filter(Predicate<JsonValue> filter);
 
     default ArrayDecoratorBuilder cast(JsonDecorator decorator) {
-      return this.decorator((t) -> true, decorator);
+      return this.decorator(t -> true, decorator);
     }
 
     default ArrayDecoratorBuilder cast(JsonDecorator.DecoratorBuilder decoratorBuilder) {
-      return this.decorator((t) -> true, decoratorBuilder);
+      return this.decorator(t -> true, decoratorBuilder);
     }
 
     ArrayDecoratorBuilder decorator(Predicate<JsonValue> filter, JsonDecorator decorator);
@@ -46,30 +46,6 @@ public interface JsonDecorator {
       this.pathElements = pathElements;
     }
 
-    public static FieldPath from(String data, char separator) {
-      List<String> fields = new ArrayList<>();
-      int index = 0;
-      if (data.charAt(0) == separator) {
-        index = 1;
-      }
-      while (index < data.length()) {
-        int next = data.indexOf(separator, index);
-        if (next > index) {
-          fields.add(data.substring(index, next));
-          index = next + 1;
-        }
-        else {
-          fields.add(data.substring(index));
-          index = data.length();
-        }
-      }
-      return new FieldPath(fields);
-    }
-
-    public static FieldPath from(String data) {
-      return FieldPath.from(data, '/');
-    }
-
     public Iterator<String> elements() {
       return this.pathElements.iterator();
     }
@@ -79,6 +55,43 @@ public interface JsonDecorator {
       elements.addAll(this.pathElements);
       elements.addAll(child.pathElements);
       return new FieldPath(elements);
+    }
+
+    public static FieldPath.Builder withSeparator(char separator)  {
+      return new Builder(separator);
+    }
+
+    public static FieldPath.Builder withDefaultSeparator()  {
+      return FieldPath.withSeparator('/');
+    }
+
+    public static class Builder {
+      private final char separator;
+
+      public Builder(final char separator) {
+        this.separator = separator;
+      }
+
+      public FieldPath from(String data) {
+        List<String> fields = new ArrayList<>();
+        int index = 0;
+        if (data.charAt(0) == separator) {
+          index = 1;
+        }
+        while (index < data.length()) {
+          int next = data.indexOf(separator, index);
+          if (next > index) {
+            fields.add(data.substring(index, next));
+            index = next + 1;
+          }
+          else {
+            fields.add(data.substring(index));
+            index = data.length();
+          }
+        }
+        return new FieldPath(fields);
+      }
+
     }
   }
 
@@ -115,7 +128,7 @@ public interface JsonDecorator {
 
     ValueDecoratorBuilder value(ValueTypeExtended toType);
 
-    default JsonDecorator ident() {
+    default JsonDecorator identity() {
       return BuilderFactory.ident;
     }
   }

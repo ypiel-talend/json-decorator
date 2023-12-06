@@ -10,18 +10,18 @@ import org.talend.components.jsondecorator.api.Cast;
 
 public class CastObject implements Cast<JsonObject> {
     @Override
-    public JsonArray toArray(JsonObject value) throws JsonDecoratorCastException {
+    public JsonArray toArray(JsonObject value) {
         JsonArray array = Json.createArrayBuilder().add(value).build();
         return array;
     }
 
     @Override
-    public JsonObject toObject(JsonObject value) throws JsonDecoratorCastException {
+    public JsonObject toObject(JsonObject value) {
         return value;
     }
 
     @Override
-    public JsonString toString(JsonObject value) throws JsonDecoratorCastException {
+    public JsonString toString(JsonObject value) {
         JsonString string = Json.createValue(value.toString());
         return string;
     }
